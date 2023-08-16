@@ -359,6 +359,21 @@ _Install_libopus() {
   popd > /dev/null
 }
 
+_Install_opus2() {
+  local name='OPUS';
+  pushd ${SOURCE_DIR}/src > /dev/null
+  echo -e "${CBLUE} Install ${name} ${CEND}";
+  [[ -d "fdk-aac" ]] && rm -rf "opus";
+  git clone https://github.com/xiph/opus
+  cd opus
+  ./autogen.sh
+  ./configure --enable-shared --prefix=${INSTALL_DIR} --bindir=${INSTALL_DIR}/bin
+  make
+  make install
+  make distclean
+  popd > /dev/null
+}
+
 _Install_libogg() {
   local name='';
   pushd ${SOURCE_DIR}/src > /dev/null
@@ -531,7 +546,7 @@ _Install_libkvazaar() {
   echo -e "${CBLUE} Install ${name} ${CEND}";
   [[ -d "kvazaar" ]] && rm -rf "kvazaar";
   git clone --depth 1 https://github.com/ultravideo/kvazaar.git
-  cd kvazaarfz
+  cd kvazaar
   ./autogen.sh
   ./configure --prefix=${INSTALL_DIR} --bindir=${INSTALL_DIR}/bin
   make
@@ -541,6 +556,8 @@ _Install_libkvazaar() {
 
 _Install_libdav1d() {
   local name='libdav1d';
+  yum install -y meson
+  yum install -y ninja
   pushd ${SOURCE_DIR}/src > /dev/null
   echo -e "${CBLUE} Install ${name} ${CEND}";
   [[ -d "dav1d" ]] && rm -rf "dav1d";
@@ -628,10 +645,12 @@ _Install_libvpx() {
   #./configure --prefix=$BUILD_DIR --enable-pic --disable-examples --disable-unit-tests --enable-vp9-highbitdepth --as=yasm
   ./configure --prefix=${INSTALL_DIR} --enable-pic --disable-examples --enable-runtime-cpu-detect --enable-vp9 --enable-vp8 \
   --enable-postproc --enable-vp9-postproc --enable-multi-res-encoding --enable-webm-io --enable-better-hw-compatibility --enable-vp9-highbitdepth --enable-onthefly-bitpacking --enable-realtime-only
-  make
+  make CC=gcc84 CXX=g++84
   make install
   popd > /dev/null
 }
+
+
 
 _Install_libxvid() {
   local name='XVID';
@@ -652,13 +671,14 @@ _Install_libxvid() {
 
 _Install_libaom() {
   local name='AOM';
+  sudo rpm -Uvh gcc84-c++-8.4.0-1.el7.x86_64.rpm
   pushd ${SOURCE_DIR}/src > /dev/null
   echo -e "${CBLUE} Install ${name} ${CEND}";
   rm -rf aom*
   git -C aom pull 2> /dev/null || git clone --depth 1 https://aomedia.googlesource.com/aom
   mkdir -p aom_build
   cd aom_build
-  PATH="/usr/local/bin:$PATH" cmake3 -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DENABLE_SHARED:bool=ON -DBUILD_SHARED_LIBS=ON -DENABLE_NASM=on ../aom && \
+  PATH="/usr/local/bin:$PATH" CC=gcc84 CXX=g++84 cmake3 -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DENABLE_SHARED:bool=ON -DBUILD_SHARED_LIBS=ON -DENABLE_NASM=on ../aom && \
   PATH="/usr/local/bin:$PATH" make && \
   make install
   popd > /dev/null
@@ -712,6 +732,7 @@ _Install_ffmpeg() {
   --extra-libs=-lm \
   --extra-cflags="-I/usr/local/include -I/usr/local/cuda/include -I/include -I/usr/local/ffmpegtoolkit/include" \
   --extra-ldflags="-L/usr/local/lib -L/usr/local/cuda/lib64 -L/usr/local/ffmpegtoolkit/lib -L/usr/local/ffmpegtoolkit/lib64" \
+  --enable-protocol=http \
   --enable-cross-compile \
   --disable-debug \
   --enable-fontconfig \
@@ -733,13 +754,10 @@ _Install_ffmpeg() {
   --enable-libfdk-aac \
   --enable-libdav1d \
   --enable-libkvazaar \
-  --enable-libmfx \
-  --enable-vaapi \
   --enable-opencl \
   --enable-libfreetype \
   --enable-libfribidi \
   --enable-libzimg \
-  --enable-libopus \
   --enable-libtheora \
   --enable-libvorbis \
   --enable-libvpx \
@@ -752,6 +770,7 @@ _Install_ffmpeg() {
   --enable-swscale \
   --enable-avfilter \
   --enable-libass \
+  --enable-openssl \
   --enable-libaribb24 \
   --enable-libxml2
   make
